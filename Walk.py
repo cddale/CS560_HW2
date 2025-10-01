@@ -1,5 +1,5 @@
 import rclpy
-from rclpy.node import NODe
+from rclpy.node import Node
 from geometre_msgs.msg import Twist
 from sensor_msgs.msp import LaserScan
 
@@ -25,7 +25,7 @@ class Walk(Node):
     def forward(self):
 	    self.move_cmd.linear.x = self.linear_speed 
 
-    def timer_callback(self): #change this to use the PID formula (uses information from sensor_callback
+    def timer_callback(self): #change this to use the PID formula (uses information from sensor_callback)
         if(self.whisker < 2.0):
             self.move_cmd.angular.z = 2.0
         else:
@@ -34,4 +34,5 @@ class Walk(Node):
 		
 def main(args=None):
     rclpy.init(arg=args)
+
     #didnt manage to get his main
