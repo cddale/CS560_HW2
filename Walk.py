@@ -1,12 +1,16 @@
 import rclpy
 from rclpy.node import Node
-from geometre_msgs.msg import Twist
-from sensor_msgs.msp import LaserScan
+import time
+import math
+from geometry_msgs.msg import Twist
+from sensor_msgs.msg import LaserScan
 
 class Walk(Node):
     def __init__(self):
-		#create publisher using twist (uses timer callback the same way sub uses sensor callback)
-        self.timer = self.create_timer(""" needs some stuff """)
+        super().__init__('walk')
+        self.cmd_pub = self.create_publisher(Twist,'/cmd_vel', 10)
+        self.whisker = 0
+        self.timer = self.create_timer(0.5, self.timer_callback)
         self.linear_speed = 0.8
         self.move_cmd = Twist()
         self.move_cmd.linear.x = self.linear_speed
@@ -17,7 +21,7 @@ class Walk(Node):
 			10)
 
     def sensor_callback(self, msg): #make this more robust for repersentation
-        middle_sensor = int(len(msg.ranges / 2))
+        middle_sensor = int(len(msg.ranges) / 2)
         front = msg.ranges[middle_sensor]
         print("Sensor: " + str(front))
         self.whisker = front
@@ -29,10 +33,14 @@ class Walk(Node):
         if(self.whisker < 2.0):
             self.move_cmd.angular.z = 2.0
         else:
-            self.move_cmd.angular.s = 0.0
+            self.move_cmd.angular.z = 0.0
         self.cmd_pub.publish(self.move_cmd) 
 		
 def main(args=None):
-    rclpy.init(arg=args)
+    rclpy.init()
+    walk_node = Walk()
+    rclpy.spin(walk_node)
+    walk_node.destroy_node()
+    rclpy.shutdown()
 
     #didnt manage to get his main
