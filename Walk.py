@@ -2,6 +2,7 @@ import rclpy
 from rclpy.node import Node
 from datetime import datetime
 import math
+import np
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 
@@ -9,7 +10,7 @@ class Walk(Node):
     def __init__(self):
         super().__init__('walk')
         #PID values
-        self.g = 3
+        self.g = 2.5
         self.K_P = 5
         self.K_I = 4
         self.K_D = 2
@@ -30,15 +31,18 @@ class Walk(Node):
 			10)
 
     def sensor_callback(self, msg): #make this more robust for repersentation
-        #middle_sensor = int(len(msg.ranges) / 2)
-        left_sensor = int(len(msg.ranges) / 4)
-        right_sensor = int(len(msg.ranges) / 4) * 3
+        middle_sensor = int(len(msg.ranges) / 2)
+        #left_sensor = int(len(msg.ranges) / 4)
+        #right_sensor = int(len(msg.ranges) / 4) * 3
 
-        left = msg.ranges[left_sensor]
-        right = msg.ranges[right_sensor]
+        #left = msg.ranges[left_sensor]
+        #right = msg.ranges[right_sensor]
+        middle_sector = msg.ranges[middle_sensor - 25 : middle_sensor + 25]
+        weights = np.hanning(len(middle_sector))  # bell curve for weights
+        self.whisker = np.average(middle_sector, weights=weights)
         
-        print("Sensor: " + str((right+left)/2) + "; U(t): " + str(self.move_cmd.angular.z))
-        self.whisker = (right + left)/2
+        print("Sensor: " + str(self.whisker) + "; U(t): " + str(self.move_cmd.angular.z))
+        #self.whisker = (right + left)/2
 		
     def forward(self):
 	    self.move_cmd.linear.x = self.linear_speed 
