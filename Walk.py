@@ -53,7 +53,7 @@ class Walk(Node):
         dedt = (self.e - self.e_prev) / (max(self.e - self.e_prev, 0.01) / max(timeDiff.total_seconds(), 0.01))
 
         u = self.K_P * self.e + self.K_I * self.e_sum + self.K_D * dedt
-        self.move_cmd.angular.z = ((u + 1000) / (1000 + 1000)) * (5 + 5) + -5
+        self.move_cmd.angular.z = ((u + 3000) / (3000 + 3000)) * (5 + 5) + -5
         
         self.e_prev = self.e
 
