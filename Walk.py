@@ -9,8 +9,8 @@ class Walk(Node):
     def __init__(self):
         super().__init__('walk')
         #PID values
-        self.g = 1.5
-        self.K_P = 100
+        self.g = 1
+        self.K_P = 10
         self.K_I = 0
         self.K_D = 0
         self.start = datetime.now()
@@ -63,10 +63,8 @@ class Walk(Node):
         
         self.move_cmd.angular.z = u
 
-        if self.whisker < 1.25:
-            self.move_cmd.linear.x = 0.2
-            """ if timeDiff % 5:
-                self.move_cmd.angular.z = -self.move_cmd.angular.z """
+        if self.whisker < 1:
+            self.move_cmd.linear.x = 0.1
         else:
             self.move_cmd.linear.x = 0.8
         #self.move_cmd.angular.z = ((u + normal_range) / (normal_range + normal_range)) * (5 + 5) + -5
