@@ -12,14 +12,14 @@ class Walk(Node):
         self.g = 1.5
         self.K_P = 100
         self.K_I = 0
-        self.K_D = 0
+        self.K_D = 25
         self.start = datetime.now()
 
-        self.cmd_pub = self.create_publisher(Twist,'/cmd_vel', 10)
+        self.cmd_pub = self.create_publisher(Twist,'/cmd_vel', 100)
         self.whisker = 0
         self.e_prev = self.g - self.whisker
         self.e_sum = 0
-        self.timer = self.create_timer(0.5, self.timer_callback)
+        self.timer = self.create_timer(0.05, self.timer_callback)
         self.linear_speed = 0.8
         self.move_cmd = Twist()
         self.move_cmd.linear.x = self.linear_speed
@@ -27,7 +27,7 @@ class Walk(Node):
 			LaserScan,
 			'/base_scan',
 			self.sensor_callback,
-			10)
+			100)
 
     def sensor_callback(self, msg): #make this more robust for repersentation
         middle_sensor = int(len(msg.ranges) / 2)
@@ -63,8 +63,8 @@ class Walk(Node):
         
         self.move_cmd.angular.z = u
 
-        if self.whisker < 1.25:
-            self.move_cmd.linear.x = 0.2
+        if self.whisker < 0.25:
+            self.move_cmd.linear.x = 0.05
             """ if timeDiff % 5:
                 self.move_cmd.angular.z = -self.move_cmd.angular.z """
         else:
