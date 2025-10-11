@@ -9,7 +9,7 @@ class Walk(Node):
     def __init__(self):
         super().__init__('walk')
         #PID values
-        self.g = 1
+        self.g = 1.075
         self.K_P = 10
         self.K_I = 0
         self.K_D = 0
@@ -40,7 +40,7 @@ class Walk(Node):
         
         print("Sensor: " + str(self.whisker) + "; U(t): " + str(self.move_cmd.angular.z))
         
-        if min_point < 1:
+        if min_point < 1.075:
             self.whisker = ((sum(middle_sector) / (right_sensor-left_sensor)) * .25) + min_point * .75
         else:
             self.whisker = ((sum(middle_sector) / (right_sensor-left_sensor)) * .80) + middle * 0.2
@@ -63,7 +63,7 @@ class Walk(Node):
         
         self.move_cmd.angular.z = u
 
-        if self.whisker < 1:
+        if self.whisker < 1.075:
             self.move_cmd.linear.x = 0.1
         else:
             self.move_cmd.linear.x = 0.8
