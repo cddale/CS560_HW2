@@ -9,9 +9,9 @@ class Walk(Node):
     def __init__(self):
         super().__init__('walk')
         #PID values
-        self.g = 1.075
-        self.K_P = 10
-        self.K_I = 0
+        self.g = 0.6
+        self.K_P = 12.5
+        self.K_I = 1
         self.K_D = 0
         self.start = datetime.now()
 
@@ -20,7 +20,7 @@ class Walk(Node):
         self.e_prev = self.g - self.whisker
         self.e_sum = 0
         self.timer = self.create_timer(0.5, self.timer_callback)
-        self.linear_speed = 0.8
+        self.linear_speed = 0.3
         self.move_cmd = Twist()
         self.move_cmd.linear.x = self.linear_speed
         self.subscription = self.create_subscription(
@@ -40,7 +40,7 @@ class Walk(Node):
         
         print("Sensor: " + str(self.whisker) + "; U(t): " + str(self.move_cmd.angular.z))
         
-        if min_point < 1.075:
+        if min_point < self.g:
             self.whisker = ((sum(middle_sector) / (right_sensor-left_sensor)) * .25) + min_point * .75
         else:
             self.whisker = ((sum(middle_sector) / (right_sensor-left_sensor)) * .80) + middle * 0.2
@@ -63,10 +63,10 @@ class Walk(Node):
         
         self.move_cmd.angular.z = u
 
-        if self.whisker < 1.075:
-            self.move_cmd.linear.x = 0.1
+        if self.whisker < self.g:
+            self.move_cmd.linear.x = 0.0
         else:
-            self.move_cmd.linear.x = 0.8
+            self.move_cmd.linear.x = self.linear_speed
         #self.move_cmd.angular.z = ((u + normal_range) / (normal_range + normal_range)) * (5 + 5) + -5
         
         self.e_prev = self.e
