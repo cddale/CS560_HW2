@@ -9,18 +9,19 @@ class Walk(Node):
     def __init__(self):
         super().__init__('walk')
         #PID values
-        self.g = 0.6
-        self.K_P = 12.5
-        self.K_I = 1
-        self.K_D = 0
+        self.g = 0.3
+        self.K_P = 100
+        self.K_I = 2.5
+        self.K_D = 0.0
         self.start = datetime.now()
 
         self.cmd_pub = self.create_publisher(Twist,'/cmd_vel', 10)
-        self.whisker = 0
-        self.e_prev = self.g - self.whisker
+        self.left = 0
+        self.right = 0
+        self.e_prev = self.g - self.right
         self.e_sum = 0
         self.timer = self.create_timer(0.5, self.timer_callback)
-        self.linear_speed = 0.3
+        self.linear_speed = 0.2
         self.move_cmd = Twist()
         self.move_cmd.linear.x = self.linear_speed
         self.subscription = self.create_subscription(
@@ -29,29 +30,24 @@ class Walk(Node):
 			self.sensor_callback,
 			10)
 
-    def sensor_callback(self, msg): #make this more robust for repersentation
-        middle_sensor = int(len(msg.ranges) / 2)
-        left_sensor = int(len(msg.ranges) / 5)
-        right_sensor = int(len(msg.ranges) / 5) * 4
-
-        middle = msg.ranges[middle_sensor]
-        middle_sector = msg.ranges[left_sensor : right_sensor]
-        min_point = min(middle_sector)
-        
-        print("Sensor: " + str(self.whisker) + "; U(t): " + str(self.move_cmd.angular.z))
-        
-        if min_point < self.g:
-            self.whisker = ((sum(middle_sector) / (right_sensor-left_sensor)) * .25) + min_point * .75
-        else:
-            self.whisker = ((sum(middle_sector) / (right_sensor-left_sensor)) * .80) + middle * 0.2
+    def sensor_callback(self, msg):
+        n = len(msg.ranges)
+        middle_sensor = n // 2
+        left_sensor = int(n * (180 / 270))
+        right_sensor = 0
+        left_sector = msg.ranges[middle_sensor : left_sensor]
+        right_sector = msg.ranges[right_sensor : middle_sensor] #right sector is intentionally larger than left sector
+        self.right = min(right_sector)
+        self.left = min(left_sector)        
 
 		
     def forward(self):
 	    self.move_cmd.linear.x = self.linear_speed 
 
-    def timer_callback(self): #change this to use the PID formula (uses information from sensor_callback)
-        normal_range = 2500
-        self.e = self.g - self.whisker
+    def timer_callback(self): 
+        if min(self.left, self.right) < self.g:
+            self.e = self.g - self.right # force right when close to walls
+        else: self.e = self.g - min(self.left, self.right)
 
         timeDiff = (datetime.now() - self.start).total_seconds()
 
@@ -61,14 +57,17 @@ class Walk(Node):
 
         u = self.K_P * self.e + self.K_I * self.e_sum + self.K_D * dedt
         
-        self.move_cmd.angular.z = u
-
-        if self.whisker < self.g:
-            self.move_cmd.linear.x = 0.0
+        if min(self.left, self.right) > 2*self.g:
+             self.move_cmd.angular.z = 0.0
+             self.move_cmd.linear.x = self.linear_speed
+        elif min(self.left, self.right) < self.g:
+             self.e = self.g - self.right
+             self.move_cmd.linear.x = 0.05
+             self.move_cmd.angular.z = u
         else:
-            self.move_cmd.linear.x = self.linear_speed
-        #self.move_cmd.angular.z = ((u + normal_range) / (normal_range + normal_range)) * (5 + 5) + -5
-        
+             self.move_cmd.angular.z = u
+             self.move_cmd.linear.x = 0.1
+
         self.e_prev = self.e
 
         self.cmd_pub.publish(self.move_cmd) 
@@ -80,4 +79,3 @@ def main(args=None):
     rclpy.spin(walk_node)
     walk_node.destroy_node()
     rclpy.shutdown()
-
