@@ -11,11 +11,19 @@ class Walk(Node):
         #PID values
         self.g = 0.3
         self.K_P = 100
+        self.K_I = 0.0
+        self.K_D = 0.0
+        self.start = datetime.now()
+
+        self.has_wall = False
+        self.first_turn = True
 
         self.cmd_pub = self.create_publisher(Twist,'/cmd_vel', 10)
+        self.whisker = 0
+        self.front = 0
         self.left = 0
         self.right = 0
-        self.e_prev = self.g - self.right
+        self.e_prev = self.g - self.whisker
         self.e_sum = 0
         self.timer = self.create_timer(0.5, self.timer_callback)
         self.linear_speed = 0.2
@@ -42,11 +50,34 @@ class Walk(Node):
 	    self.move_cmd.linear.x = self.linear_speed 
 
     def timer_callback(self): 
+        if not self.has_wall and min(self.left, self.right) > self.g:
+            self.move_cmd.angular.z = 0.0
+            self.move_cmd.linear.x = self.linear_speed
+            self.cmd_pub.publish(self.move_cmd)
+            return
+
+        self.has_wall = True
+
+        if self.first_turn and self.left < self.right:
+            self.move_cmd.angular.z = 1.0
+            self.move_cmd.linear.x = 0.0
+            self.cmd_pub.publish(self.move_cmd)
+            return
+
+        self.first_turn = False
+
         if min(self.left, self.right) < self.g:
             self.e = self.g - self.right # force right when close to walls
         else: self.e = self.g - min(self.left, self.right)
+        self.start = datetime.now()
 
-        u = self.K_P * self.e
+        timeDiff = (datetime.now() - self.start).total_seconds()
+
+        self.e_sum = self.e_sum + self.e  * ((self.e - self.e_prev) / max(timeDiff,0.01))
+
+        dedt = (self.e - self.e_prev) / (max(self.e - self.e_prev, 0.01) / max(timeDiff, 0.01))
+
+        u = self.K_P * self.e + self.K_I * self.e_sum + self.K_D * dedt
         
         if min(self.left, self.right) > 2*self.g:
              self.move_cmd.angular.z = 0.0
@@ -58,6 +89,8 @@ class Walk(Node):
         else:
              self.move_cmd.angular.z = u
              self.move_cmd.linear.x = 0.1
+
+        self.e_prev = self.e
 
         self.cmd_pub.publish(self.move_cmd) 
 
